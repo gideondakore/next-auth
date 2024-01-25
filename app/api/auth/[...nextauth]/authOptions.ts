@@ -10,8 +10,8 @@ type CredentialType = Record<string, CredentialInput>;
 export const authOption: NextAuthOptions = {
     providers: [
         GoogleProvider({
-            clientId: "585130326071-1k92frderaoor39o1liehcg3ttdqlpjr.apps.googleusercontent.com",
-            clientSecret: "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",
+            clientId: process.env.CLIENT_ID,
+            clientSecret: process.env.CLIENT_SECRET,
         }),
 
         CredentialsProvider({
