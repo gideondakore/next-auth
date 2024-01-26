@@ -17,8 +17,8 @@ interface CredentialsProps {
 export const authOption: NextAuthOptions = {
     providers: [
         GoogleProvider({
-            clientId: process.env.CLIENT_ID,
-            clientSecret: process.env.CLIENT_SECRET,
+            clientId: process.env.CLIENT_ID as string,
+            clientSecret: process.env.CLIENT_SECRET as string,
         }),
 
         CredentialsProvider({
