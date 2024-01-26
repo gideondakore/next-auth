@@ -1,10 +1,7 @@
 'use client'
-
 import { SessionContextValue, signIn, signOut, useSession } from "next-auth/react"
-import { useState } from "react"
-import { redirect } from "next/navigation"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-
 
 const SignIn = () => {
     const { data: session, status }: SessionContextValue = useSession();
@@ -14,7 +11,7 @@ const SignIn = () => {
 
     const handleSubmit = async (e: React.MouseEvent<HTMLFormElement>) => {
         e.preventDefault()
-
+        // console.log("SESSION", session);
         const res = await signIn("credentials", {
             email,
             password,
@@ -22,24 +19,17 @@ const SignIn = () => {
             redirect: false,
         })
 
-        // const user = res?.ok
-        console.log("FROM INSIDE SIGNIN COMPONENTS: ", res);
-
-        // const user = res
-        //     .then(response => {
-        //         if (response?.ok) {
-        //             // redirect("/");
-        //             router.push('/')
-        //             console.log(response);
-        //         }
-        //         router.push(`${response?.url}/signIn`);
-        //     })
-        // .catch(error => { console.error("Error Message", error) });
-
-
-        // console.log("From User: ",);
+        if (res?.ok) {
+            console.log('User object from signin response:', res);
+        } else {
+            console.error('Authentication error:', res?.error);
+        }
 
     }
+
+    useEffect(() => {
+        console.log('User object from session effect:', session, " STATUS: ", status);
+    })
 
     return (
         <form style={{ display: 'flex', flexDirection: 'column' }} onSubmit={handleSubmit}>
@@ -48,18 +38,31 @@ const SignIn = () => {
             {" "}
             <input type="password" placeholder="Enter password" name="Password" value={password} onChange={({ target }) => setPassword(target?.value)} />
             {" "}
-            <button type="submit">Sign in with credentials</button>
+
             {
-                status === "authenticated"
+                session?.user.provider === "credentials"
                     ?
-                    <button type="button" onClick={() => signOut()}>Sign out from google</button>
+                    (status === "authenticated"
+                        ?
+                        <button type="button" onClick={() => signOut()}>Sign out from credentials</button>
+                        :
+                        <button type="submit">Sign in with credentials</button>
+                    )
                     :
-                    <button type="button" onClick={() => signIn("google", { callbackUrl: "/" })}>Sign in with google</button>
-
+                    <button type="submit">Sign in with credentials</button>
             }
-            {/* <button type="button" onClick={() => signIn('google', { callbackUrl: "/" })}> */}
-
-            {/* </button> */}
+            {
+                session?.user.provider === "google"
+                    ?
+                    (status === "authenticated"
+                        ?
+                        <button type="button" onClick={() => signOut()}>Sign out from google</button>
+                        :
+                        <button type="button" onClick={() => signIn("google", { callbackUrl: "/", redirect: false })}>Sign in with google</button>
+                    )
+                    :
+                    <button type="button" onClick={() => signIn("google", { callbackUrl: "/", redirect: false })}>Sign in with google</button>
+            }
         </form>
     )
 }

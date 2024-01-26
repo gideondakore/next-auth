@@ -1,10 +1,17 @@
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider, { CredentialInput } from "next-auth/providers/credentials";
-import { NextAuthOptions} from "next-auth";
-import { Session } from "next-auth";
-import { Console } from "console";
+import { NextAuthOptions, Session} from "next-auth";
+import bcrypt from "bcryptjs";
 
 type CredentialType = Record<string, CredentialInput>;
+interface CredentialsProps {
+    user: {
+        name?: string,
+        email?: string,
+        id?: string
+      },
+      message?: string
+}
 
 
 export const authOption: NextAuthOptions = {
@@ -20,10 +27,9 @@ export const authOption: NextAuthOptions = {
             credentials: {} as CredentialType,
 
             async authorize(credentials, req){
-                // console.log("REQUEST FROM AUTHORIZE: ",req);
                 if(!credentials) return null;
                 const {email, password}  = credentials;
-                const res = await fetch(`http://localhost:3000/api/user?email=${email}&password=${password}`, {
+                const res = await fetch(`http://localhost:3000/api/user?email=${email}`, {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json"
@@ -31,9 +37,7 @@ export const authOption: NextAuthOptions = {
                 });
                 
                 const user = await res.json();
-                console.log("===============AUTHORIZE===============");
-                console.log("Authorize User", user);
-                if(user){
+                if(user && bcrypt.compareSync(password, user.user.password)){
                     return user;
                 }
                 return null;
@@ -43,38 +47,60 @@ export const authOption: NextAuthOptions = {
     ],
     callbacks: {
         async signIn({user, account, profile, email, credentials}){
-            // console.log("============SIGNIN============");
-            // console.log(user, account, profile, email, credentials)
-            // console.log("User SignIn", user);
           try {
-              if(account?.provider === "google"){
+              if(account?.provider === "google" && user){
+                const res = await fetch(`http://localhost:3000/api/user?email=${user.email}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+                const data = await res.json();
+               
+                if(data){
+                
+                return "found";
+                }
                 return true;
-              }else{
-                  return true;
               }
+
+              if(account?.provider === "credentials" && user ){
+                return true;
+              }
+
+              return false;
+
           } catch (error) {
-             return false;
+            throw new Error(`Error occur while signing you in, try again later\n${error}`);
           }
         },
 
         async jwt({token, user, account, profile, trigger}){
-            // console.log("============JWT============");
-            // console.log("TOKENJwt",token, "USERJwt", user, "ACCOUNTJwt", account, "PROFILEJwt",profile, "TRIGGERJwt", trigger)
-            // console.log("Jwt User", user);
-            if(account){
-                token.accessToken = account.access_token
+            if(account?.type === "oauth"){
+                token.accessToken = account.access_token;
+                token.provider = account?.provider;
+                return token;
             }
-    
+            if(account?.type === "credentials"){
+                token.user = user;
+                token.provider = account?.provider;
+                return token;
+            }
             return token
         },
 
         async session({session, token, user}): Promise<Session>{
-            // console.log("============SESSION============")
-            // console.log("SESSION",session, "TOKEN",token, "USER", user);
-            // console.log("Session USER", session.user, user);
-            if(session.user){
+            if(session.user && token?.provider === "google"){
                 session.user.accessToken = token.accessToken as string;
+                session.user.provider = token?.provider;
             }
+
+            if(token?.provider === "credentials"){
+              session.user.name = (token.user as CredentialsProps).user.name;
+              session.user.email = (token.user as CredentialsProps).user.email;
+              session.user.provider = token?.provider;
+            }
+
             return session
         },
 
@@ -84,7 +110,7 @@ export const authOption: NextAuthOptions = {
             return baseUrl;
         }
 
-
+    
     },
     
     secret: process.env.NEXTAUTH_SECRET,
@@ -93,8 +119,8 @@ export const authOption: NextAuthOptions = {
     },
     session: {
         strategy: "jwt",
-        maxAge: 60 * 60 * 24,
-        updateAge: 60 * 60,
+        maxAge: 60 * 60 * 24 * 2,
+        updateAge: 60 * 60 * 24,
     }
     
 }

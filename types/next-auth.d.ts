@@ -4,7 +4,8 @@ import NextAuth, { DefaultSession } from "next-auth"
 declare module 'next-auth'{
     interface Session {
         user: {
-            accessToken?: string | null
+            accessToken?: string | null,
+            provider?: string | null
         } & DefaultSession["user"]
     }
 }
