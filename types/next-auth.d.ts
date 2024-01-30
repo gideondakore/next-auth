@@ -5,7 +5,9 @@ declare module 'next-auth'{
     interface Session {
         user: {
             accessToken?: string | null,
-            provider?: string | null
+            provider?: string | null,
+            linkAccount?: boolean | null,
+            foundAccount?: boolean | null,
         } & DefaultSession["user"]
     }
 }

@@ -10,25 +10,35 @@ const SignIn = () => {
     const router = useRouter();
 
     const handleSubmit = async (e: React.MouseEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        // console.log("SESSION", session);
-        const res = await signIn("credentials", {
-            email,
-            password,
-            callbackUrl: '/',
-            redirect: false,
-        })
+        e.preventDefault();
+        try {
 
-        if (res?.ok) {
-            console.log('User object from signin response:', res);
-        } else {
-            console.error('Authentication error:', res?.error);
+            const res = await signIn("credentials", {
+                email,
+                password,
+                callbackUrl: '/signIn',
+                redirect: false,
+            })
+
+            console.log('User object from signin response 111:', res);
+
+
+            if (res?.ok) {
+                console.log('User object from signin response:', res);
+            } else {
+                console.error('Authentication error:', res?.error);
+            }
+
+        } catch (error) {
+            throw new Error(`Error: ${error}`);
         }
-
     }
 
     useEffect(() => {
-        console.log('User object from session effect:', session, " STATUS: ", status);
+        // console.log('User object from session effect:', session, " STATUS: ", status);
+        if (!session?.user.linkAccount && session?.user.foundAccount) {
+            router.push("/");
+        }
     })
 
     return (
